@@ -21,6 +21,13 @@ source_tree = Path(__file__).parent
 venv_path = source_tree / VENV_NAME
 pyproject_path = source_tree / "pyproject.toml"
 
+SDL3_ARGS = [
+    "-Csetup-args=-Dsdl_api=3",
+    "-Csetup-args=-Dimage=disabled",
+    "-Csetup-args=-Dmixer=disabled",
+    "-Csetup-args=-Dfont=disabled",
+]
+
 
 class Colors(Enum):
     RESET = "\033[0m"
@@ -168,8 +175,14 @@ class Dev:
         editable = not self.args.get("install", True)
         debug = self.args.get("debug", False)
         lax = self.args.get("lax", False)
+        sdl3 = self.args.get("sdl3", False)
 
-        install_args = ["--no-build-isolation", "-Cbuild-dir=.mesonpy-build"]
+        build_suffix = "-sdl3" if sdl3 else ""
+        install_args = [
+            "--no-build-isolation",
+            f"-Cbuild-dir=.mesonpy-build{build_suffix}",
+        ]
+
         if editable:
             install_args.append("--editable")
 
@@ -181,6 +194,9 @@ class Dev:
         if not lax:
             # use the same flags as CI
             install_args.extend(get_cibw_setup_args())
+
+        if sdl3:
+            install_args.extend(SDL3_ARGS)
 
         pprint(f"Building pygame (with {editable=}, {debug=}, and {lax=})")
         pip_install(self.py, install_args)
@@ -277,6 +293,11 @@ class Dev:
             "--lax",
             action="store_true",
             help="Be lax about build warnings, allow the build to succeed with them",
+        )
+        build_parser.add_argument(
+            "--sdl3",
+            action="store_true",
+            help="Build against SDL3 instead of the default SDL2",
         )
 
         # Docs command
